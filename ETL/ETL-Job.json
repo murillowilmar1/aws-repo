@@ -1,3 +1,4 @@
+{
   "Name": "ETL-Job",
   "Role": "arn:aws:iam::573509103457:role/glue-job-execution-role",
   "Command": {
@@ -23,5 +24,4 @@
   "WorkerType": "G.1X",
   "ExecutionClass": "STANDARD"
 }
-
 
