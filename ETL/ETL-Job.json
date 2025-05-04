@@ -1,6 +1,5 @@
-{
   "Name": "ETL-Job",
-  "arn:aws:iam::573509103457:role/glue-job-execution-role",
+  "Role": "arn:aws:iam::573509103457:role/glue-job-execution-role",
   "Command": {
     "Name": "glueetl",
     "ScriptLocation": "s3://aws-glue-assets-006502475289-us-east-1/scripts/ETL-Job.py",
@@ -24,3 +23,5 @@
   "WorkerType": "G.1X",
   "ExecutionClass": "STANDARD"
 }
+
+
