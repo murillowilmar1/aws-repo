@@ -1,4 +1,4 @@
-name: Deploy Glue ETLs to PROD
+name: Deploy Glue Jobs from JSON
 
 on:
   push:
@@ -6,53 +6,47 @@ on:
       - main
 
 jobs:
-  deploy-prod:
+  deploy-glue-jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configurar credenciales (DEV)
+      - name: Set AWS credentials (dev)
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Instalar jq
+      - name: Install jq
         run: sudo apt-get install -y jq
 
-      - name: Assume Role en PROD
+      - name: Assume role in PROD
         id: assume
         run: |
           CREDS=$(aws sts assume-role \
             --role-arn "${{ secrets.ASSUME_ROLE_PROD_ARN }}" \
-            --role-session-name glue-ci-prod)
+            --role-session-name glue-json-deploy)
 
           echo "AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
           echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
 
-      - name: Subir scripts a producción
+      - name: Deploy Glue JSON jobs
         run: |
-          for script in jobs/*.py; do
-            name=$(basename "$script" .py)
-            echo "Procesando $name..."
-            job_info=$(aws glue get-job --job-name "$name" 2>/dev/null)
+          for file in ETL/*.json; do
+            job_name=$(basename "$file" .json)
+            echo "Procesando job $job_name desde $file"
 
-            if [[ -z "$job_info" ]]; then
-              echo "Glue job $name no encontrado en PROD. Saltando."
-              continue
+            # Verifica si el job existe
+            if aws glue get-job --job-name "$job_name" >/dev/null 2>&1; then
+              echo "Actualizando job existente: $job_name"
+              aws glue update-job --job-name "$job_name" --job-update file://$file
+            else
+              echo "Creando nuevo job: $job_name"
+              aws glue create-job --name "$job_name" --cli-input-json file://$file
             fi
-
-            script_path=$(echo "$job_info" | jq -r '.Job.Command.ScriptLocation')
-
-            if [[ "$script_path" == "null" ]]; then
-              echo "ScriptLocation no definido. Saltando."
-              continue
-            fi
-
-            echo "Subiendo $script a $script_path"
-            aws s3 cp "$script" "$script_path"
           done
+
