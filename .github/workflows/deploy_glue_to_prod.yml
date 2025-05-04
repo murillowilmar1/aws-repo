@@ -1,0 +1,58 @@
+name: Deploy Glue ETLs to PROD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configurar credenciales (DEV)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Instalar jq
+        run: sudo apt-get install -y jq
+
+      - name: Assume Role en PROD
+        id: assume
+        run: |
+          CREDS=$(aws sts assume-role \
+            --role-arn "${{ secrets.ASSUME_ROLE_PROD_ARN }}" \
+            --role-session-name glue-ci-prod)
+
+          echo "AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
+          echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
+
+      - name: Subir scripts a producción
+        run: |
+          for script in jobs/*.py; do
+            name=$(basename "$script" .py)
+            echo "Procesando $name..."
+            job_info=$(aws glue get-job --job-name "$name" 2>/dev/null)
+
+            if [[ -z "$job_info" ]]; then
+              echo "Glue job $name no encontrado en PROD. Saltando."
+              continue
+            fi
+
+            script_path=$(echo "$job_info" | jq -r '.Job.Command.ScriptLocation')
+
+            if [[ "$script_path" == "null" ]]; then
+              echo "ScriptLocation no definido. Saltando."
+              continue
+            fi
+
+            echo "Subiendo $script a $script_path"
+            aws s3 cp "$script" "$script_path"
+          done
