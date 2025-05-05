@@ -3,20 +3,9 @@
 INPUT=$1
 OUTPUT=$2
 
-jq 'with_entries(
-  .key as $k |
-  {
-    ([
-      "name","role","command","defaultArguments","executionProperty",
-      "maxRetries","allocatedCapacity","timeout","maxCapacity",
-      "glueVersion","numberOfWorkers","workerType","executionClass",
-      "jobMode","description","sourceControlDetails"
-    ] | index($k) // $k): .value
-  }
-) | with_entries(
+jq 'del(.name) | with_entries(
   .key |=
-    if . == "name" then "Name"
-    elif . == "role" then "Role"
+    if . == "role" then "Role"
     elif . == "command" then "Command"
     elif . == "defaultArguments" then "DefaultArguments"
     elif . == "executionProperty" then "ExecutionProperty"
@@ -31,6 +20,5 @@ jq 'with_entries(
     elif . == "jobMode" then "JobMode"
     elif . == "description" then "Description"
     elif . == "sourceControlDetails" then "SourceControlDetails"
-    else .
-    end
+    else . end
 )' "$INPUT" > "$OUTPUT"
