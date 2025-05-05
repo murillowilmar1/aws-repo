@@ -83,7 +83,7 @@ jobs:
             --src-region us-east-1 \
             --dst-profile prod \
             --dst-region us-east-1 \
-            --src-job-names script1 \
+            --src-job-names script1.json \
             --config-path glue_ci/mapping.json \
             --copy-job-script true \
             --skip-prompt
