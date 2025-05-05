@@ -1,10 +1,10 @@
-name: Sync Glue Visual and Script Jobs to Production
+name: Deploy and Sync Glue Jobs
 
 on:
   workflow_dispatch:
 
 jobs:
-  sync-glue-visual:
+  glue-ci-cd:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,8 +16,10 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install boto3
-        run: pip install boto3
+      - name: Install boto3 and jq
+        run: |
+          pip install boto3
+          sudo apt-get update && sudo apt-get install -y jq
 
       - name: Configure AWS source profile
         run: |
@@ -32,7 +34,7 @@ jobs:
           echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
           echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-      - name: Run Glue Visual Sync
+      - name: Sync Glue Visual Jobs
         run: |
           python3 glue_ci/sync.py \
             --src-profile dev \
@@ -43,59 +45,21 @@ jobs:
             --config-path glue_ci/mapping.json \
             --skip-prompt
 
-  deploy-script-jobs:
-    needs: sync-glue-visual
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Set AWS credentials (dev)
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Install jq and AWS CLI v2
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq unzip
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-
-      - name: Assume role in PROD
+      - name: Assume role in PROD for classic jobs
         id: assume
         run: |
           CREDS=$(aws sts assume-role \
             --role-arn "${{ secrets.ASSUME_ROLE_PROD_ARN }}" \
-            --role-session-name glue-script-deploy)
-
+            --role-session-name glue-json-deploy)
           echo "AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
           echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
 
-      - name: Deploy Glue script-based jobs from Notebooks/
+      - name: Deploy Glue Notebooks (.json)
         run: |
           for file in Notebooks/*.json; do
             job_name=$(basename "$file" .json)
             echo "Procesando job $job_name desde $file"
-
-            # Obtener ruta del script desde el JSON
-            script_s3=$(jq -r '.command.scriptLocation' "$file")
-            py_file="Notebooks/$job_name.py"
-
-            if [ -f "$py_file" ]; then
-              bucket=$(echo "$script_s3" | cut -d'/' -f3)
-              key=$(echo "$script_s3" | cut -d'/' -f4-)
-              echo "Subiendo $py_file a s3://$bucket/$key"
-              aws s3 cp "$py_file" "s3://$bucket/$key"
-            else
-              echo "⚠️ No se encontró el archivo $py_file. Saltando la copia a S3."
-            fi
-
             if aws glue get-job --job-name "$job_name" >/dev/null 2>&1; then
               echo "Actualizando job existente: $job_name"
               aws glue update-job --job-name "$job_name" --job-update file://$file
@@ -103,4 +67,11 @@ jobs:
               echo "Creando nuevo job: $job_name"
               aws glue create-job --name "$job_name" --cli-input-json file://$file
             fi
+          done
+
+      - name: Upload Notebook Scripts (.py)
+        run: |
+          for file in Notebooks/*.py; do
+            filename=$(basename "$file")
+            aws s3 cp "$file" "s3://bucketprueba-produccion/scripts/$filename"
           done
