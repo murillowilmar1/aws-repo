@@ -1,0 +1,53 @@
+name: Deploy Glue Jobs from JSON
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-glue-jobs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set AWS credentials (dev)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Assume role in PROD
+        id: assume
+        run: |
+          CREDS=$(aws sts assume-role \
+            --role-arn "${{ secrets.ASSUME_ROLE_PROD_ARN }}" \
+            --role-session-name glue-json-deploy)
+
+          echo "AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
+          echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          chmod +x scripts/fix_glue_json.sh
+
+      - name: Deploy Glue Jobs
+        run: |
+          for file in Notebooks/*.json; do
+            job_name=$(basename "$file" .json)
+            echo "🔁 Procesando job $job_name desde $file"
+
+            ./scripts/fix_glue_json.sh "$file" "tmp_fixed.json"
+
+            if aws glue get-job --job-name "$job_name" > /dev/null 2>&1; then
+              echo "🛠️ Actualizando job: $job_name"
+              aws glue update-job --job-name "$job_name" --job-update file://tmp_fixed.json
+            else
+              echo "📦 Creando nuevo job: $job_name"
+              aws glue create-job --cli-input-json file://tmp_fixed.json
+            fi
+          done
