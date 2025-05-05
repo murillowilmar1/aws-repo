@@ -45,18 +45,9 @@ jobs:
             --config-path glue_ci/mapping.json \
             --skip-prompt
 
-      - name: Assume role in PROD for classic jobs
-        id: assume
-        run: |
-          CREDS=$(aws sts assume-role \
-            --role-arn "${{ secrets.ASSUME_ROLE_PROD_ARN }}" \
-            --role-session-name glue-json-deploy)
-          echo "AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
-          echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
-
       - name: Deploy Glue Notebooks (.json)
         run: |
+          export AWS_PROFILE=prod
           for file in Notebooks/*.json; do
             job_name=$(basename "$file" .json)
             echo "Procesando job $job_name desde $file"
@@ -71,6 +62,7 @@ jobs:
 
       - name: Upload Notebook Scripts (.py)
         run: |
+          export AWS_PROFILE=prod
           for file in Notebooks/*.py; do
             filename=$(basename "$file")
             aws s3 cp "$file" "s3://bucketprueba-produccion/scripts/$filename"
