@@ -40,6 +40,6 @@ jobs:
             --dst-profile prod \
             --dst-region us-east-1 \
             --src-job-names ETL-Job \
-            --config-path glue_visual_sync/mapping.json \
+            --config-path glue_ci/mapping.json \
             --skip-prompt
 
