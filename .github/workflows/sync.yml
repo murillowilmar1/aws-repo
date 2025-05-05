@@ -48,6 +48,6 @@ jobs:
             --dst-region us-east-1 \
             --src-job-names script1 \
             --config-path glue_ci/mapping.json \
-            --overwrite-jobs \
-            --copy-job-script \
+            --overwrite-jobs true \
+            --copy-job-script true \
             --skip-prompt
