@@ -44,8 +44,8 @@ jobs:
             --config-path glue_ci/mapping.json \
             --skip-prompt
 
-  deploy-script-jobs:
-    name: Deploy Script Jobs
+  upload-job-scripts:
+    name: Upload Scripts/*.py
     runs-on: ubuntu-latest
     needs: sync-glue-visual-jobs
 
@@ -53,37 +53,41 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install tools
+      - name: Configure AWS Credentials for PROD
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.DST_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload Glue Job Scripts to S3
         run: |
-          sudo apt-get update && sudo apt-get install -y jq
-          pip install boto3
+          for file in Scripts/*.py; do
+            filename=$(basename "$file")
+            echo "Uploading job script $filename"
+            aws s3 cp "$file" "s3://aws-glue-assets-573509103457-us-east-1/scripts/$filename"
+          done
 
-      - name: Configure AWS credentials
+  upload-notebook-scripts:
+    name: Upload Notebooks/*.py
+    runs-on: ubuntu-latest
+    needs: upload-job-scripts
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials for PROD
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.DST_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload Glue Notebook Scripts to S3
         run: |
-          mkdir -p ~/.aws
-          echo "[prod]" > ~/.aws/credentials
-          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
-          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
-
-      - name: Upload scripts and deploy jobs
-        run: |
-          export AWS_PROFILE=prod
-          export AWS_REGION=us-east-1
-
-          for file in Notebooks/*.json; do
-            job_name=$(basename "$file" .json)
-            script_path="Notebooks/${job_name}.py"
-            script_s3="s3://aws-glue-assets-573509103457-us-east-1/scripts/${job_name}.py"
-
-            echo "Subiendo $script_path a $script_s3"
-            aws s3 cp "$script_path" "$script_s3"
-
-            echo "Procesando job $job_name desde $file"
-            if aws glue get-job --job-name "$job_name" >/dev/null 2>&1; then
-              echo "Actualizando job existente: $job_name"
-              aws glue update-job --job-name "$job_name" --job-update file://$file
-            else
-              echo "Creando nuevo job: $job_name"
-              aws glue create-job --name "$job_name" --cli-input-json file://$file
-            fi
+          for file in Notebooks/*.py; do
+            filename=$(basename "$file")
+            echo "Uploading notebook script $filename"
+            aws s3 cp "$file" "s3://aws-glue-assets-573509103457-us-east-1/scripts/$filename"
           done
