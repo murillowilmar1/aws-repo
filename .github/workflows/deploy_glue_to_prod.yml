@@ -3,7 +3,7 @@ name: Deploy Glue Jobs from JSON
 on:
   push:
     branches:
-      - main
+     
 
 jobs:
   deploy-glue-jobs:
