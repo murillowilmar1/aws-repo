@@ -1,14 +1,14 @@
-name: Sync Glue Visual Jobs and Deploy Notebooks
+name: Sync and Deploy Glue Jobs
 
 on:
   workflow_dispatch:
 
 jobs:
-  deploy-glue:
+  glue-cicd:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -19,16 +19,16 @@ jobs:
       - name: Install dependencies
         run: |
           pip install boto3
-          sudo apt-get install -y jq
+          sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Configure AWS dev credentials (source)
+      - name: Configure AWS dev profile
         run: |
-          mkdir ~/.aws
+          mkdir -p ~/.aws
           echo "[dev]" > ~/.aws/credentials
           echo "aws_access_key_id = ${{ secrets.SRC_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
           echo "aws_secret_access_key = ${{ secrets.SRC_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-      - name: Configure AWS prod credentials (destination)
+      - name: Configure AWS prod profile
         run: |
           echo "[prod]" >> ~/.aws/credentials
           echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
@@ -45,22 +45,19 @@ jobs:
             --config-path glue_ci/mapping.json \
             --skip-prompt
 
-      - name: Upload Notebook Scripts (.py)
+      - name: Deploy Notebook-based Glue Jobs
         run: |
           export AWS_PROFILE=prod
           export AWS_REGION=us-east-1
-          for file in Notebooks/*.py; do
-            filename=$(basename "$file")
-            echo "Subiendo $filename a S3"
-            aws s3 cp "$file" "s3://bucketprueba-produccion/scripts/$filename"
-          done
 
-      - name: Deploy Notebook Jobs (.json)
-        run: |
-          export AWS_PROFILE=prod
-          export AWS_REGION=us-east-1
-          for file in Notebooks/*.json; do
+          for file in notebooks/*.json; do
             job_name=$(basename "$file" .json)
+            script_path="notebooks/${job_name}.py"
+            script_s3="s3://aws-glue-assets-573509103457-us-east-1/scripts/${job_name}.py"
+
+            echo "Subiendo $script_path a $script_s3"
+            aws s3 cp "$script_path" "$script_s3"
+
             echo "Procesando job $job_name desde $file"
             if aws glue get-job --job-name "$job_name" >/dev/null 2>&1; then
               echo "Actualizando job existente: $job_name"
