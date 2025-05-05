@@ -42,7 +42,7 @@ jobs:
 
       - name: Deploy Glue Jobs from JSON
         run: |
-          for jsonfile in ETL/*.json; do
+          for jsonfile in Notebooks/*.json; do
             job_name=$(basename "$jsonfile" .json)
             echo "Processing $job_name..."
 
