@@ -1,10 +1,10 @@
-name: Deploy and Sync Glue Jobs
+name: Sync Glue Visual Jobs and Deploy Notebooks
 
 on:
   workflow_dispatch:
 
 jobs:
-  glue-ci-cd:
+  deploy-glue:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,25 +16,25 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install boto3 and jq
+      - name: Install dependencies
         run: |
           pip install boto3
-          sudo apt-get update && sudo apt-get install -y jq
+          sudo apt-get install -y jq
 
-      - name: Configure AWS source profile
+      - name: Configure AWS dev credentials (source)
         run: |
-          mkdir -p ~/.aws
+          mkdir ~/.aws
           echo "[dev]" > ~/.aws/credentials
           echo "aws_access_key_id = ${{ secrets.SRC_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
           echo "aws_secret_access_key = ${{ secrets.SRC_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-      - name: Configure AWS destination profile
+      - name: Configure AWS prod credentials (destination)
         run: |
           echo "[prod]" >> ~/.aws/credentials
           echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
           echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-      - name: Sync Glue Visual Jobs
+      - name: Run Glue Visual Job Sync
         run: |
           python3 glue_ci/sync.py \
             --src-profile dev \
@@ -45,9 +45,20 @@ jobs:
             --config-path glue_ci/mapping.json \
             --skip-prompt
 
-      - name: Deploy Glue Notebooks (.json)
+      - name: Upload Notebook Scripts (.py)
         run: |
           export AWS_PROFILE=prod
+          export AWS_REGION=us-east-1
+          for file in Notebooks/*.py; do
+            filename=$(basename "$file")
+            echo "Subiendo $filename a S3"
+            aws s3 cp "$file" "s3://bucketprueba-produccion/scripts/$filename"
+          done
+
+      - name: Deploy Notebook Jobs (.json)
+        run: |
+          export AWS_PROFILE=prod
+          export AWS_REGION=us-east-1
           for file in Notebooks/*.json; do
             job_name=$(basename "$file" .json)
             echo "Procesando job $job_name desde $file"
@@ -58,12 +69,4 @@ jobs:
               echo "Creando nuevo job: $job_name"
               aws glue create-job --name "$job_name" --cli-input-json file://$file
             fi
-          done
-
-      - name: Upload Notebook Scripts (.py)
-        run: |
-          export AWS_PROFILE=prod
-          for file in Notebooks/*.py; do
-            filename=$(basename "$file")
-            aws s3 cp "$file" "s3://bucketprueba-produccion/scripts/$filename"
           done
