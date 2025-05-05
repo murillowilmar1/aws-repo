@@ -2,23 +2,22 @@
 
 INPUT=$1
 OUTPUT=$2
+JOB_NAME=$(jq -r '.name' "$INPUT")
 
-jq 'del(.name) | with_entries(
-  .key |=
-    if . == "role" then "Role"
-    elif . == "command" then "Command"
-    elif . == "defaultArguments" then "DefaultArguments"
-    elif . == "executionProperty" then "ExecutionProperty"
-    elif . == "maxRetries" then "MaxRetries"
-    elif . == "allocatedCapacity" then "AllocatedCapacity"
-    elif . == "timeout" then "Timeout"
-    elif . == "maxCapacity" then "MaxCapacity"
-    elif . == "glueVersion" then "GlueVersion"
-    elif . == "numberOfWorkers" then "NumberOfWorkers"
-    elif . == "workerType" then "WorkerType"
-    elif . == "executionClass" then "ExecutionClass"
-    elif . == "jobMode" then "JobMode"
-    elif . == "description" then "Description"
-    elif . == "sourceControlDetails" then "SourceControlDetails"
-    else . end
-)' "$INPUT" > "$OUTPUT"
+jq --arg NAME "$JOB_NAME" '
+  del(.name) |
+  .Name = $NAME |
+  .ExecutionProperty.MaxConcurrentRuns = .executionProperty.maxConcurrentRuns |
+  .Command.Name = .command.name |
+  .Command.ScriptLocation = .command.scriptLocation |
+  .Command.PythonVersion = .command.pythonVersion |
+  .SourceControlDetails.Provider = .sourceControlDetails.provider |
+  .SourceControlDetails.Repository = .sourceControlDetails.repository |
+  .SourceControlDetails.Branch = .sourceControlDetails.branch |
+  .SourceControlDetails.Folder = .sourceControlDetails.folder |
+  del(
+    .executionProperty,
+    .command,
+    .sourceControlDetails
+  )
+' "$INPUT" > "$OUTPUT"
