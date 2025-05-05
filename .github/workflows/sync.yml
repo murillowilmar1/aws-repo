@@ -33,15 +33,14 @@ jobs:
           echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
           echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-      # 🔹 Subir el script a S3 de producción
       - name: Upload Glue script to prod S3
         run: |
           aws s3 cp Notebooks/script1.py s3://aws-glue-assets-573509103457-us-east-1/scripts/script1.py --profile prod --region us-east-1
 
-      # 🔹 Sincronizar el Glue Job completo (definición + script)
       - name: Sync Glue Job (definition + script)
         run: |
           python3 glue_ci/sync.py \
+            --targets job \
             --src-profile dev \
             --src-region us-east-1 \
             --dst-profile prod \
