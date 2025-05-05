@@ -1,1 +1,45 @@
+name: Sync Glue Visual Job to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-glue:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install boto3
+        run: pip install boto3
+
+      - name: Configure AWS source profile
+        run: |
+          mkdir ~/.aws
+          echo "[dev]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.SRC_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.SRC_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      - name: Configure AWS destination profile
+        run: |
+          echo "[prod]" >> ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      - name: Run Glue Visual Sync
+        run: |
+          python3 glue_ci/sync.py \
+            --src-profile dev \
+            --src-region us-east-1 \
+            --dst-profile prod \
+            --dst-region us-east-1 \
+            --src-job-names ETL-Job \
+            --config-path glue_visual_sync/mapping.json \
+            --skip-prompt
 
