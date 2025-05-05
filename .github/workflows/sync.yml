@@ -1,0 +1,53 @@
+name: Sync Glue Script and Job
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-glue-scripts-and-jobs:
+    name: Upload Py + Sync Job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install boto3
+
+      - name: Configure AWS credentials for dev
+        run: |
+          mkdir -p ~/.aws
+          echo "[dev]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.SRC_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.SRC_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      - name: Configure AWS credentials for prod
+        run: |
+          echo "[prod]" >> ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      # 🔹 Subir el script a S3 de producción
+      - name: Upload Glue script to prod S3
+        run: |
+          aws s3 cp Notebooks/script1.py s3://aws-glue-assets-573509103457-us-east-1/scripts/script1.py --profile prod --region us-east-1
+
+      # 🔹 Sincronizar el Glue Job completo (definición + script)
+      - name: Sync Glue Job (definition + script)
+        run: |
+          python3 glue_ci/sync.py \
+            --src-profile dev \
+            --src-region us-east-1 \
+            --dst-profile prod \
+            --dst-region us-east-1 \
+            --src-job-names script1 \
+            --config-path glue_ci/mapping.json \
+            --overwrite-jobs \
+            --copy-job-script \
+            --skip-prompt
