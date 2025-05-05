@@ -1,27 +1,40 @@
 {
-  "Name": "ETL-Job",
-  "Role": "arn:aws:iam::573509103457:role/glue-job-execution-role",
-  "Command": {
-    "Name": "glueetl",
-    "ScriptLocation": "s3://aws-glue-assets-006502475289-us-east-1/scripts/ETL-Job.py",
-    "PythonVersion": "3"
+  "name" : "ETL-Job",
+  "jobMode" : "VISUAL",
+  "description" : "",
+  "role" : "arn:aws:iam::006502475289:role/s3-access-control",
+  "executionProperty" : {
+    "maxConcurrentRuns" : 1
   },
-  "DefaultArguments": {
-    "--enable-metrics": "true",
-    "--enable-spark-ui": "true",
-    "--spark-event-logs-path": "s3://aws-glue-assets-006502475289-us-east-1/sparkHistoryLogs/",
-    "--enable-job-insights": "true",
-    "--enable-observability-metrics": "true",
-    "--enable-glue-datacatalog": "true",
-    "--job-bookmark-option": "job-bookmark-disable",
-    "--job-language": "python",
-    "--TempDir": "s3://aws-glue-assets-006502475289-us-east-1/temporary/"
+  "command" : {
+    "name" : "glueetl",
+    "scriptLocation" : "s3://aws-glue-assets-006502475289-us-east-1/scripts/ETL-Job.py",
+    "pythonVersion" : "3"
   },
-  "MaxRetries": 0,
-  "Timeout": 480,
-  "GlueVersion": "5.0",
-  "NumberOfWorkers": 10,
-  "WorkerType": "G.1X",
-  "ExecutionClass": "STANDARD"
+  "defaultArguments" : {
+    "--enable-metrics" : "true",
+    "--enable-spark-ui" : "true",
+    "--spark-event-logs-path" : "s3://aws-glue-assets-006502475289-us-east-1/sparkHistoryLogs/",
+    "--enable-job-insights" : "true",
+    "--enable-observability-metrics" : "true",
+    "--enable-glue-datacatalog" : "true",
+    "--job-bookmark-option" : "job-bookmark-disable",
+    "--job-language" : "python",
+    "--TempDir" : "s3://aws-glue-assets-006502475289-us-east-1/temporary/"
+  },
+  "maxRetries" : 0,
+  "allocatedCapacity" : 10,
+  "timeout" : 480,
+  "maxCapacity" : 10.0,
+  "glueVersion" : "5.0",
+  "numberOfWorkers" : 10,
+  "workerType" : "G.1X",
+  "executionClass" : "STANDARD",
+  "codeGenConfigurationNodes" : "{\"node-1746381731871\":{\"S3GlueParquetTarget\":{\"AutoDataQuality\":{\"EvaluationContext\":\"EvaluateDataQuality_node1746377613925\",\"IsEnabled\":true},\"Compression\":\"snappy\",\"Inputs\":[\"node-1746381682116\"],\"Name\":\"Amazon S3\",\"NumberTargetPartitions\":\"0\",\"PartitionKeys\":[],\"Path\":\"s3://bucketprueba-desarollo-boto3\",\"SchemaChangePolicy\":{\"EnableUpdateCatalog\":false}}},\"node-1746381682116\":{\"S3CsvSource\":{\"AdditionalOptions\":{\"EnableSamplePath\":false,\"SamplePath\":\"s3://bucketprueba-desarollo/employee_engagement_survey_data.csv\"},\"Escaper\":\"\",\"Exclusions\":[],\"Name\":\"Amazon S3\",\"OptimizePerformance\":false,\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"employee id\",\"Type\":\"string\"},{\"Name\":\"survey date\",\"Type\":\"string\"},{\"Name\":\"engagement score\",\"Type\":\"string\"},{\"Name\":\"satisfaction score\",\"Type\":\"string\"},{\"Name\":\"work-life balance score\",\"Type\":\"string\"}]}],\"Paths\":[\"s3://bucketprueba-desarollo\"],\"QuoteChar\":\"quote\",\"Recurse\":true,\"Separator\":\"comma\",\"WithHeader\":true}}}",
+  "sourceControlDetails" : {
+    "provider" : "GITHUB",
+    "repository" : "aws-repo",
+    "branch" : "main",
+    "folder" : "ETL"
+  }
 }
-
