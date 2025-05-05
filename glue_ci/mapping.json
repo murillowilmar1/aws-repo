@@ -1,7 +1,6 @@
 {
   "arn:aws:iam::006502475289:role/s3-access-control": "arn:aws:iam::573509103457:role/glue-job-execution-role",
-  "s3://aws-glue-assets-006502475289-us-east-1": "s3://aws-glue-assets-s3-access-control-us-east-1",
+  "s3://aws-glue-assets-006502475289-us-east-1": "s3://aws-glue-assets-573509103457-us-east-1",
   "s3://bucketprueba-desarollo": "s3://bucketprueba-produccion",
   "s3://bucketprueba-desarollo-boto3": "s3://bucketprueba-produccion-boto3"
 }
-
