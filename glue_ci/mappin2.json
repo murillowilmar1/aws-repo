@@ -1,0 +1,4 @@
+{
+  "arn:aws:iam::006502475289": "arn:aws:iam::573509103457",
+  "s3://aws-glue-assets-006502475289-us-east-1": "s3://aws-glue-assets-573509103457-us-east-1"
+}
