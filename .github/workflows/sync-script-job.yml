@@ -35,6 +35,6 @@ jobs:
             --src-profile dev \
             --dst-profile prod \
             --src-job-names script1 \
-            --config-path glue_ci/mappin2.json \
+            --config-path glue_ci/mapping.json \
             --skip-prompt \
             --verbose
