@@ -12,5 +12,7 @@ sc = SparkContext()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 job = Job(glueContext)
+
+JOB_NAME = glueContext.self
 job.init(args['JOB_NAME'], args)
 job.commit()
