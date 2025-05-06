@@ -5,7 +5,7 @@ import json
 glue = boto3.client('glue', region_name='us-east-1')
 
 # Leer archivo JSON
-with open('glue_ci/script1.json') as f:
+with open('Notebooks/script1.json') as f:
     raw_config = json.load(f)
 
 command = raw_config.get("command", {})
