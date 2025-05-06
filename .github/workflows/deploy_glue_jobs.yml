@@ -1,12 +1,11 @@
-name: Glue CI/CD Pipeline
+name: Deploy Glue Job from JSON
 
 on:
   workflow_dispatch:
 
 jobs:
-
-  sync-visual-jobs:
-    name: Sync Visual Jobs
+  deploy-glue-job:
+    name: Create Glue Job
     runs-on: ubuntu-latest
 
     steps:
@@ -21,69 +20,12 @@ jobs:
       - name: Install boto3
         run: pip install boto3
 
-      - name: Configure AWS dev profile
+      - name: Configure AWS credentials
         run: |
           mkdir -p ~/.aws
-          echo "[dev]" > ~/.aws/credentials
-          echo "aws_access_key_id = ${{ secrets.SRC_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
-          echo "aws_secret_access_key = ${{ secrets.SRC_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-      - name: Configure AWS prod profile
-        run: |
-          echo "[prod]" >> ~/.aws/credentials
-          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
-          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
-
-      - name: Run Visual Job Sync
-        run: |
-          python3 glue_ci/sync.py \
-            --src-profile dev \
-            --src-region us-east-1 \
-            --dst-profile prod \
-            --dst-region us-east-1 \
-            --src-job-names ETL-Job \
-            --config-path glue_ci/mapping.json \
-            --copy-job-script true \
-            --skip-prompt
-
-  sync-script-jobs:
-    name: Sync Script Jobs
-    runs-on: ubuntu-latest
-    needs: sync-visual-jobs
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: Install boto3
-        run: pip install boto3
-
-      - name: Configure AWS dev profile
-        run: |
-          mkdir -p ~/.aws
-          echo "[dev]" > ~/.aws/credentials
-          echo "aws_access_key_id = ${{ secrets.SRC_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
-          echo "aws_secret_access_key = ${{ secrets.SRC_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
-
-      - name: Configure AWS prod profile
-        run: |
-          echo "[prod]" >> ~/.aws/credentials
-          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
-          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
-
-      - name: Run Script Job Sync
-        run: |
-          python3 glue_ci/sync.py \
-            --src-profile dev \
-            --src-region us-east-1 \
-            --dst-profile prod \
-            --dst-region us-east-1 \
-            --src-job-names script1.json \
-            --config-path glue_ci/mapping.json \
-            --copy-job-script true \
-            --skip-prompt
+      - name: Run Glue Job Creation Script
+        run: python glue_ci/create_glue_job_from_json.py
