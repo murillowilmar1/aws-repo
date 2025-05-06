@@ -2,7 +2,12 @@ import boto3
 import json
 
 # Cliente sin claves embebidas
-glue = boto3.client('glue', region_name='us-east-1')
+glue = boto3.client(
+    'glue',
+    aws_access_key_id='AKIAYLB6ON5Q67FGVDPK',
+    aws_secret_access_key='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',
+    region_name='us-east-1'
+)
 
 # Leer archivo JSON
 with open('Notebooks/script1.json') as f:
