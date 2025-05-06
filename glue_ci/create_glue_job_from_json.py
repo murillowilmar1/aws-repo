@@ -19,7 +19,7 @@ glue = boto3.client(
 
 
 # Cargar el archivo JSON
-with open('Notebooks/script1.json') as f:
+with open('Notebooks/Script2.json') as f:
     raw_config = json.load(f)
 
 # Si estamos en prod, sobreescribimos ciertos valores
