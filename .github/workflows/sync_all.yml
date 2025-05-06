@@ -86,4 +86,10 @@ jobs:
           echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
       - name: Run Glue Job Creation Script
-        run: python glue_ci/create_glue_job_from_json.py
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            export IS_PRODUCTION=true
+          else
+            export IS_PRODUCTION=false
+          fi
+          python glue_ci/create_glue_job_from_json.py
