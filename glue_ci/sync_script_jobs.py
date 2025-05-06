@@ -24,6 +24,27 @@ def apply_mapping(obj, mapping):
 
 def create_or_update_job(glue, job_config):
     job_name = job_config.pop("name")
+
+    # Renombrar claves inválidas para update_job
+    renames = {
+        "jobMode": "JobMode",
+        "description": "Description",
+        "role": "Role",
+        "defaultArguments": "DefaultArguments",
+        "maxRetries": "MaxRetries",
+        "allocatedCapacity": "AllocatedCapacity",
+        "timeout": "Timeout",
+        "maxCapacity": "MaxCapacity",
+        "glueVersion": "GlueVersion",
+        "numberOfWorkers": "NumberOfWorkers",
+        "workerType": "WorkerType",
+        "executionClass": "ExecutionClass",
+        "sourceControlDetails": "SourceControlDetails"
+    }
+    for old_key, new_key in renames.items():
+        if old_key in job_config:
+            job_config[new_key] = job_config.pop(old_key)
+
     try:
         glue.get_job(JobName=job_name)
         print(f"Job '{job_name}' ya existe. Se va a actualizar.")
@@ -64,7 +85,7 @@ def main():
     glue = session.client("glue")
 
     create_or_update_job(glue, job_config)
-    print("✅ Job sincronizado correctamente")
+    print("\u2705 Job sincronizado correctamente")
 
 if __name__ == "__main__":
     main()
