@@ -1,0 +1,16 @@
+name: Orquestador Glue Jobs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-visual:
+    uses: ./.github/workflows/sync_visual_glue_jobs.yml
+
+  run-script-json:
+    needs: run-visual
+    uses: ./.github/workflows/sync_script_glue_jobs.yml
+
+  run-script-py:
+    needs: run-visual
+    uses: ./.github/workflows/sync_scriptpy_glue_jobs.yml
