@@ -25,7 +25,7 @@ with open('Notebooks/Script2.json') as f:
 # Si estamos en prod, sobreescribimos ciertos valores
 if IS_PROD:
     raw_config["role"] = f"arn:aws:iam::{PROD_ACCOUNT_ID}:role/s3-access-control"
-    raw_config["command"]["scriptLocation"] = f"{PROD_BUCKET_PREFIX}/scripts/script1.py"
+    raw_config["command"]["scriptLocation"] = f"{PROD_BUCKET_PREFIX}/scripts/Script2.py"
     raw_config["defaultArguments"]["--spark-event-logs-path"] = f"{PROD_BUCKET_PREFIX}/sparkHistoryLogs/"
     raw_config["defaultArguments"]["--TempDir"] = f"{PROD_BUCKET_PREFIX}/temporary/"
 
