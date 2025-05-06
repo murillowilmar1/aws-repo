@@ -32,6 +32,6 @@ jobs:
       - name: Run Glue Script Job Sync
         run: |
           python3 glue_ci/sync_script_jobs.py \
-            --config-path glue_ci/script1.json \
+            --config-path Notebooks/script1.json \
             --mapping-path glue_ci/mapping.json \
             --profile prod
