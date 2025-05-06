@@ -5,7 +5,7 @@ on:
 
 jobs:
   deploy-glue-job:
-    name: Create Glue Job
+    name: Create or Update Glue Job
     runs-on: ubuntu-latest
 
     steps:
@@ -20,6 +20,12 @@ jobs:
       - name: Install boto3
         run: pip install boto3
 
+      - name: Configure AWS credentials
+        run: |
+          mkdir -p ~/.aws
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
       - name: Run Glue Job Creation Script
         run: python glue_ci/create_glue_job_from_json.py
