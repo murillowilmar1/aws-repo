@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload script1.py to S3
         run: |
-          aws s3 cp Notebooks/script1.py s3://aws-glue-assets-573509103457-us-east-1/scripts/Script2.py
+          aws s3 cp Notebooks/Script2.py s3://aws-glue-assets-573509103457-us-east-1/scripts/Script2.py
 
   deploy-glue-job-json:
     runs-on: ubuntu-latest
