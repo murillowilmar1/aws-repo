@@ -1,56 +1,44 @@
-name: Deploy Glue Jobs (py + json)
+name: Sync Glue Visual Job to Production
 
 on:
   workflow_dispatch:
 
 jobs:
-  deploy-glue-jobs:
+  sync-glue:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set AWS credentials (dev)
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          python-version: '3.9'
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
+      - name: Install boto3
+        run: pip install boto3
 
-      - name: Assume role in prod
-        id: assume
+      - name: Configure AWS source profile
         run: |
-          CREDS=$(aws sts assume-role \
-            --role-arn "${{ secrets.ASSUME_ROLE_PROD_ARN }}" \
-            --role-session-name glue-json-deploy)
+          mkdir ~/.aws
+          echo "[dev]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.SRC_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.SRC_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-          echo "AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
-          echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
-
-      - name: Upload scripts to S3 (prod)
+      - name: Configure AWS destination profile
         run: |
-          for pyfile in Notebooks/*.py; do
-            filename=$(basename $pyfile)
-            echo "Uploading $filename to S3..."
-            aws s3 cp "$pyfile" "s3://aws-glue-assets-573509103457-us-east-1/scripts/$filename"
-          done
+          echo "[prod]" >> ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-      - name: Deploy Glue Jobs from JSON
+      - name: Run Glue Visual Sync
         run: |
-          for jsonfile in Notebooks/*.json; do
-            job_name=$(basename "$jsonfile" .json)
-            echo "Processing $job_name..."
-
-            if aws glue get-job --job-name "$job_name" >/dev/null 2>&1; then
-              echo "Updating job: $job_name"
-              aws glue update-job --job-name "$job_name" --job-update file://$jsonfile
-            else
-              echo "Creating job: $job_name"
-              aws glue create-job --name "$job_name" --cli-input-json file://$jsonfile
-            fi
-          done
+          python3 glue_ci/sync.py \
+            --src-profile dev \
+            --src-region us-east-1 \
+            --dst-profile prod \
+            --dst-region us-east-1 \
+            --src-job-names ETL-Job \
+            --config-path glue_ci/mapping.json \
+            --skip-prompt
