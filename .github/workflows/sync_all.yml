@@ -1,0 +1,95 @@
+name: Sync All Glue Jobs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-glue-visual:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install boto3
+        run: pip install boto3
+
+      - name: Configure AWS source profile
+        run: |
+          mkdir ~/.aws
+          echo "[dev]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.SRC_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.SRC_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      - name: Configure AWS destination profile
+        run: |
+          echo "[prod]" >> ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      - name: Run Glue Visual Sync
+        run: |
+          python3 glue_ci/sync.py \
+            --src-profile dev \
+            --src-region us-east-1 \
+            --dst-profile prod \
+            --dst-region us-east-1 \
+            --src-job-names ETL-Job \
+            --config-path glue_ci/mapping.json \
+            --skip-prompt
+
+  upload-glue-script:
+    runs-on: ubuntu-latest
+    needs: sync-glue-visual
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.DST_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload script1.py to S3
+        run: |
+          aws s3 cp Notebooks/script1.py s3://aws-glue-assets-573509103457-us-east-1/scripts/script1.py
+
+  deploy-glue-job-json:
+    runs-on: ubuntu-latest
+    needs: sync-glue-visual
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install boto3
+        run: pip install boto3
+
+      - name: Configure AWS credentials
+        run: |
+          mkdir -p ~/.aws
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      - name: Run Glue Job Creation Script
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            export IS_PRODUCTION=true
+          else
+            export IS_PRODUCTION=false
+          fi
+          python glue_ci/create_glue_job_from_json.py

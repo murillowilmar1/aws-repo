@@ -1,0 +1,37 @@
+name: Deploy Glue Job from JSON with Prod Detection
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-glue-job:
+    name: Create or Update Glue Job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install boto3
+        run: pip install boto3
+
+      - name: Configure AWS credentials
+        run: |
+          mkdir -p ~/.aws
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.DST_AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.DST_AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      - name: Run Glue Job Creation Script
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            export IS_PRODUCTION=true
+          else
+            export IS_PRODUCTION=false
+          fi
+          python glue_ci/create_glue_job_from_json.py

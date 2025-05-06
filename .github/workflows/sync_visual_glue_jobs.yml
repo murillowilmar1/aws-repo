@@ -42,4 +42,3 @@ jobs:
             --src-job-names ETL-Job \
             --config-path glue_ci/mapping.json \
             --skip-prompt
-

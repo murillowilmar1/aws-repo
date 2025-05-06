@@ -2,25 +2,25 @@
   "name" : "script1",
   "jobMode" : "SCRIPT",
   "description" : "",
-  "role" : "arn:aws:iam::006502475289:role/s3-access-control",
+  "role" : "arn:aws:iam::573509103457:role/s3-access-control",
   "executionProperty" : {
     "maxConcurrentRuns" : 1
   },
   "command" : {
     "name" : "glueetl",
-    "scriptLocation" : "s3://aws-glue-assets-006502475289-us-east-1/scripts/script1.py",
+    "scriptLocation" : "s3://aws-glue-assets-573509103457-us-east-1/scripts/script1.py",
     "pythonVersion" : "3"
   },
   "defaultArguments" : {
     "--enable-metrics" : "true",
     "--enable-spark-ui" : "true",
-    "--spark-event-logs-path" : "s3://aws-glue-assets-006502475289-us-east-1/sparkHistoryLogs/",
+    "--spark-event-logs-path" : "s3://aws-glue-assets-573509103457-us-east-1/sparkHistoryLogs/",
     "--enable-job-insights" : "true",
     "--enable-observability-metrics" : "true",
     "--enable-glue-datacatalog" : "true",
     "--job-bookmark-option" : "job-bookmark-disable",
     "--job-language" : "python",
-    "--TempDir" : "s3://aws-glue-assets-006502475289-us-east-1/temporary/"
+    "--TempDir" : "s3://aws-glue-assets-573509103457-us-east-1/temporary/"
   },
   "maxRetries" : 0,
   "allocatedCapacity" : 10,
@@ -33,7 +33,7 @@
   "sourceControlDetails" : {
     "provider" : "GITHUB",
     "repository" : "aws-repo",
-    "branch" : "ft/wmc/Branch",
+    "branch" : "main",
     "folder" : "Notebooks"
   }
 }
