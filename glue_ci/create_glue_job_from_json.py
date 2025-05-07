@@ -12,8 +12,8 @@ PROD_BUCKET_PREFIX = f"s3://aws-glue-assets-{PROD_ACCOUNT_ID}-us-east-1"
 # Cliente boto3
 glue = boto3.client(
     'glue',
-    aws_access_key_id='AKIAYLB6ON5Q67FGVDPK',
-    aws_secret_access_key='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',
+    aws_access_key_id='*******',
+    aws_secret_access_key='*****',
     region_name='us-east-1'
 )
 
