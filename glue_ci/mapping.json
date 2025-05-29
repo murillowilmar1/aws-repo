@@ -1,7 +1,7 @@
 {
-  "arn:aws:iam::006502475289:role/s3-access-control": "arn:aws:iam::573509103457:role/s3-access-control",
-  "s3://aws-glue-assets-006502475289-us-east-1/scripts/script1.py": "s3://aws-glue-assets-573509103457-us-east-1/scripts/script1.py", 
-  "s3://aws-glue-assets-006502475289-us-east-1/sparkHistoryLogs/":"s3://aws-glue-assets-573509103457-us-east-1/sparkHistoryLogs/", 
-  "s3://aws-glue-assets-006502475289-us-east-1/temporary/":"s3://aws-glue-assets-573509103457-us-east-1/temporary/"
+  "arn:aws:iam::0:role/s3-access-control": "arn:aws:iam::5:role/s3-access-control",
+  "s3://aws-glue-assets--us-east-1/scripts/script1.py": "s3://aws-glue-assets-5-us-east-1/scripts/script1.py", 
+  "s3://aws-glue-assets-0-us-east-1/sparkHistoryLogs/":"s3://aws-glue-assets-5-us-east-1/sparkHistoryLogs/", 
+  "s3://aws-glue-assets-0-us-east-1/temporary/":"s3://aws-glue-assets-5-us-east-1/temporary/"
   
 }
