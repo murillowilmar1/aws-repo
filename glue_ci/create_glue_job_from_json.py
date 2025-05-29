@@ -6,7 +6,7 @@ import os
 IS_PROD = os.environ.get("IS_PRODUCTION", "false").lower() == "true"
 
 # Account ID destino si es producción
-PROD_ACCOUNT_ID = "573509103457"
+PROD_ACCOUNT_ID = "********"
 PROD_BUCKET_PREFIX = f"s3://aws-glue-assets-{PROD_ACCOUNT_ID}-us-east-1"
 
 # Cliente boto3
